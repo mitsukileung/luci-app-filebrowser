@@ -1,23 +1,23 @@
 #
-# Copyright (C) 2020 Project OpenWrt
-# This is free software, licensed under the GNU General Public License v3
+# Copyright (C) 2021 ImmortalWrt
+# This is free software, licensed under the GNU General Public License v3.
 # See /LICENSE.txt for more information.
 #
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=filebrowser
-PKG_VERSION:=2.12.1
+PKG_VERSION:=2.15.0
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=e9c0369
+PKG_SOURCE_VERSION:=73ccbe9
 PKG_SOURCE_URL:=https://github.com/filebrowser/filebrowser
-PKG_MIRROR_HASH:=7ab5e1acbea7dcd18051350dbd23761004d13e843c19bc3ce60af1273943bb62
+PKG_MIRROR_HASH:=2dbb4b17b78b13cee44c62d1109459f92f5fd25c3953ba055e5d778c76244a38
 
 PKG_LICENSE:=Apache-2.0
-PKG_LICENSE_FILES:=LICENSE.txt
-PKG_MAINTAINER:=CN_SZTL <cnsztl@project-openwrt.eu.org>
+PKG_LICENSE_FILES:=LICENSE
+PKG_MAINTAINER:=CN_SZTL <cnsztl@immortalwrt.org>
 
 PKG_BUILD_DEPENDS:=golang/host node/host
 PKG_BUILD_PARALLEL:=1
@@ -30,16 +30,16 @@ PKG_CONFIG_DEPENDS:= \
 GO_PKG:=github.com/filebrowser/filebrowser
 GO_PKG_LDFLAGS:=-s -w
 GO_PKG_LDFLAGS_X:= \
-	github.com/filebrowser/filebrowser/v2/version.CommitSHA=$(PKG_SOURCE_VERSION) \
-	github.com/filebrowser/filebrowser/v2/version.Version=$(PKG_VERSION)
+	$(GO_PKG)/v2/version.CommitSHA=$(PKG_SOURCE_VERSION) \
+	$(GO_PKG)/v2/version.Version=v$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
+include ../../lang/golang/golang-package.mk
 
 define Package/filebrowser
   SECTION:=utils
   CATEGORY:=Utilities
-  TITLE:=Web File Browser which can be used as a middleware or standalone app.
+  TITLE:=Web File Browser
   URL:=https://github.com/filebrowser/filebrowser
   DEPENDS:=$(GO_ARCH_DEPENDS)
 endef
@@ -63,23 +63,17 @@ endef
 
 ifeq ($(CONFIG_FILEBROWSER_COMPRESS_GOPROXY),y)
 export GO111MODULE=on
-export GOPROXY=https://goproxy.io
+export GOPROXY=https://goproxy.baidu.com
 endif
 
 define Build/Compile
 ( \
-  cd $(PKG_BUILD_DIR) ; \
-  rm -rf frontend/dist ; \
-  rm -f http/rice-box.go ; \
   cd $(PKG_BUILD_DIR)/frontend ; \
   npm ci; \
   npm run lint ; \
   npm run build ; \
-  GOOS=$$$$(go env GOOS) GOARCH=$$$$(go env GOARCH) GO111MODULE=off go get -v github.com/GeertJohan/go.rice/rice/... ; \
-  cd $(PKG_BUILD_DIR)/http ; \
-  "$$$$(go env GOPATH)/bin/rice" embed-go ; \
-  $(call GoPackage/Build/Compile) ; \
 )
+	$(call GoPackage/Build/Compile)
 ifeq ($(CONFIG_FILEBROWSER_COMPRESS_UPX),y)
 	$(STAGING_DIR_HOST)/bin/upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/filebrowser
 endif
